@@ -9,9 +9,31 @@ import Link from "next/link";
 import { Suspense } from "react";
 import Highlighter from "react-highlight-words";
 import { getTableConfig } from "drizzle-orm/pg-core";
+import { graphql, useFragment } from "@/fuse";
+import { execute } from "fuse/next/server";
 
 const PER_PAGE = 30;
 const storiesTableName = getTableConfig(storiesTable).name;
+
+const GET_STORIES_QUERY = graphql(`
+  query getStories {
+    stories {
+      nodes { 
+      id
+      title
+      url
+      domain
+      username
+      points
+      comments_count
+      created_at
+      submitter {
+        username
+      }
+      }
+    }
+  }
+`)
 
 export async function getStoriesCount() {
   // high performance, estimative count
@@ -38,30 +60,11 @@ export async function getStories({
   q: string | null;
   limit?: number;
 }) {
-  return await db
-    .select({
-      id: storiesTable.id,
-      title: storiesTable.title,
-      url: storiesTable.url,
-      domain: storiesTable.domain,
-      username: storiesTable.username,
-      points: storiesTable.points,
-      submitted_by: usersTable.username,
-      comments_count: storiesTable.comments_count,
-      created_at: storiesTable.created_at,
-    })
-    .from(storiesTable)
-    .orderBy(desc(storiesTable.created_at))
-    .where(
-      storiesWhere({
-        isNewest,
-        type,
-        q,
-      })
-    )
-    .limit(limit)
-    .offset((page - 1) * limit)
-    .leftJoin(usersTable, sql`${usersTable.id} = ${storiesTable.submitted_by}`);
+  const result = await execute({ query: GET_STORIES_QUERY })
+
+  const stories = result.data?.stories?.nodes.filter(Boolean) || [];
+
+  return stories;
 }
 
 function storiesWhere({
@@ -127,12 +130,14 @@ export async function Stories({
 }) {
   const uid = headers().get("x-vercel-id") ?? nanoid();
   console.time(`fetch stories ${uid}`);
+
   const stories = await getStories({
-    page,
     isNewest,
+    page,
     type,
     q,
-  });
+  })
+  
   console.timeEnd(`fetch stories ${uid}`);
 
   const now = Date.now();
@@ -179,8 +184,8 @@ export async function Stories({
                 )}
                 <p className="text-xs text-[#666] md:text-[#828282]">
                   {story.points} point{story.points > 1 ? "s" : ""} by{" "}
-                  {story.submitted_by ?? story.username}{" "}
-                  <TimeAgo now={now} date={story.created_at} /> |{" "}
+                  {story.submitter?.username}{" "}
+                  <TimeAgo now={now} date={new Date(story.created_at)} /> |{" "}
                   <span
                     className="cursor-default"
                     aria-hidden="true"

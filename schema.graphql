@@ -12,6 +12,37 @@ type Mutation {
   _version: String!
 }
 
+interface Node {
+  id: ID!
+}
+
 type Query {
   _version: String!
+  node(id: ID!): Node
+  nodes(ids: [ID!]!): [Node]!
+  stories(page: Int! = 1): QueryStoriesList
+  story(id: ID!): Story
+  user(id: ID!): User
+}
+
+type QueryStoriesList {
+  nodes: [Story!]!
+  totalCount: Int
+}
+
+type Story implements Node {
+  comments_count: Int
+  created_at: Date
+  domain: String
+  id: ID!
+  points: Int!
+  submitter: User
+  title: String!
+  url: String
+  username: String
+}
+
+type User implements Node {
+  id: ID!
+  username: String
 }
