@@ -64,7 +64,31 @@ export async function getStories({
 
   const stories = result.data?.stories?.nodes.filter(Boolean) || [];
 
-  return stories;
+  return stories
+  return await db
+    .select({
+      id: storiesTable.id,
+      title: storiesTable.title,
+      url: storiesTable.url,
+      domain: storiesTable.domain,
+      username: storiesTable.username,
+      points: storiesTable.points,
+      submitted_by: usersTable.username,
+      comments_count: storiesTable.comments_count,
+      created_at: storiesTable.created_at,
+    })
+    .from(storiesTable)
+    .orderBy(desc(storiesTable.created_at))
+    .where(
+      storiesWhere({
+        isNewest,
+        type,
+        q,
+      })
+    )
+    .limit(limit)
+    .offset((page - 1) * limit)
+    .leftJoin(usersTable, sql`${usersTable.id} = ${storiesTable.submitted_by}`);
 }
 
 function storiesWhere({
@@ -132,8 +156,8 @@ export async function Stories({
   console.time(`fetch stories ${uid}`);
 
   const stories = await getStories({
-    isNewest,
     page,
+    isNewest,
     type,
     q,
   })
