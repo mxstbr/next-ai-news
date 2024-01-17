@@ -29,12 +29,20 @@ export type Node = {
   id: Scalars['ID']['output'];
 };
 
+export type PageInfo = {
+  __typename: 'PageInfo';
+  endCursor?: Maybe<Scalars['String']['output']>;
+  hasNextPage: Scalars['Boolean']['output'];
+  hasPreviousPage: Scalars['Boolean']['output'];
+  startCursor?: Maybe<Scalars['String']['output']>;
+};
+
 export type Query = {
   __typename: 'Query';
   _version: Scalars['String']['output'];
   node?: Maybe<Node>;
   nodes: Array<Maybe<Node>>;
-  stories?: Maybe<QueryStoriesList>;
+  stories?: Maybe<QueryStoriesConnection>;
   story?: Maybe<Story>;
   user?: Maybe<User>;
 };
@@ -51,7 +59,15 @@ export type QueryNodesArgs = {
 
 
 export type QueryStoriesArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  isNewest: Scalars['Boolean']['input'];
+  last?: InputMaybe<Scalars['Int']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
   page?: Scalars['Int']['input'];
+  q?: InputMaybe<Scalars['String']['input']>;
+  type?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -64,10 +80,17 @@ export type QueryUserArgs = {
   id: Scalars['ID']['input'];
 };
 
-export type QueryStoriesList = {
-  __typename: 'QueryStoriesList';
-  nodes: Array<Story>;
+export type QueryStoriesConnection = {
+  __typename: 'QueryStoriesConnection';
+  edges: Array<Maybe<QueryStoriesConnectionEdge>>;
+  pageInfo: PageInfo;
   totalCount?: Maybe<Scalars['Int']['output']>;
+};
+
+export type QueryStoriesConnectionEdge = {
+  __typename: 'QueryStoriesConnectionEdge';
+  cursor: Scalars['String']['output'];
+  node: Story;
 };
 
 export type Story = Node & {
@@ -89,10 +112,13 @@ export type User = Node & {
   username?: Maybe<Scalars['String']['output']>;
 };
 
-export type GetStoriesQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetStoriesQueryVariables = Exact<{
+  page?: InputMaybe<Scalars['Int']['input']>;
+  isNewest: Scalars['Boolean']['input'];
+}>;
 
 
-export type GetStoriesQuery = { __typename: 'Query', stories?: { __typename: 'QueryStoriesList', nodes: Array<{ __typename: 'Story', id: string, title: string, url?: string | null, domain?: string | null, username?: string | null, points: number, comments_count?: number | null, created_at?: any | null, submitter?: { __typename: 'User', username?: string | null } | null }> } | null };
+export type GetStoriesQuery = { __typename: 'Query', stories?: { __typename: 'QueryStoriesConnection', totalCount?: number | null, pageInfo: { __typename: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean }, edges: Array<{ __typename: 'QueryStoriesConnectionEdge', node: { __typename: 'Story', id: string, title: string, url?: string | null, domain?: string | null, username?: string | null, points: number, comments_count?: number | null, created_at?: any | null, submitter?: { __typename: 'User', username?: string | null } | null } } | null> } | null };
 
 
-export const GetStoriesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"getStories"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stories"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"nodes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"domain"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"points"}},{"kind":"Field","name":{"kind":"Name","value":"comments_count"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"submitter"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"username"}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetStoriesQuery, GetStoriesQueryVariables>;
+export const GetStoriesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"getStories"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"page"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"isNewest"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stories"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"page"},"value":{"kind":"Variable","name":{"kind":"Name","value":"page"}}},{"kind":"Argument","name":{"kind":"Name","value":"isNewest"},"value":{"kind":"Variable","name":{"kind":"Name","value":"isNewest"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasPreviousPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"domain"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"points"}},{"kind":"Field","name":{"kind":"Name","value":"comments_count"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"submitter"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"username"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetStoriesQuery, GetStoriesQueryVariables>;

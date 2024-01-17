@@ -16,18 +16,31 @@ interface Node {
   id: ID!
 }
 
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+}
+
 type Query {
   _version: String!
   node(id: ID!): Node
   nodes(ids: [ID!]!): [Node]!
-  stories(page: Int! = 1): QueryStoriesList
+  stories(after: String, before: String, first: Int, isNewest: Boolean!, last: Int, limit: Int, page: Int! = 1, q: String, type: String): QueryStoriesConnection
   story(id: ID!): Story
   user(id: ID!): User
 }
 
-type QueryStoriesList {
-  nodes: [Story!]!
+type QueryStoriesConnection {
+  edges: [QueryStoriesConnectionEdge]!
+  pageInfo: PageInfo!
   totalCount: Int
+}
+
+type QueryStoriesConnectionEdge {
+  cursor: String!
+  node: Story!
 }
 
 type Story implements Node {

@@ -9,16 +9,22 @@ import Link from "next/link";
 import { Suspense } from "react";
 import Highlighter from "react-highlight-words";
 import { getTableConfig } from "drizzle-orm/pg-core";
-import { graphql, useFragment } from "@/fuse";
+import { graphql } from "@/fuse";
 import { execute } from "fuse/next/server";
 
 const PER_PAGE = 30;
 const storiesTableName = getTableConfig(storiesTable).name;
 
 const GET_STORIES_QUERY = graphql(`
-  query getStories {
-    stories {
-      nodes { 
+  query getStories($page: Int, $isNewest: Boolean!) {
+    stories(page: $page, isNewest: $isNewest) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+      }
+    edges {
+      node { 
       id
       title
       url
@@ -31,6 +37,7 @@ const GET_STORIES_QUERY = graphql(`
         username
       }
       }
+    }
     }
   }
 `)
@@ -60,11 +67,16 @@ export async function getStories({
   q: string | null;
   limit?: number;
 }) {
-  const result = await execute({ query: GET_STORIES_QUERY })
+  const result = await execute({ query: GET_STORIES_QUERY, variables: {
+    page,
+    isNewest,
+    type,
+    q,
+    limit,
+  } })
 
-  const stories = result.data?.stories?.nodes.filter(Boolean) || [];
+  return result.data?.stories?.edges?.filter(Boolean).flatMap((edge) => edge?.node || []) || [];
 
-  return stories
   return await db
     .select({
       id: storiesTable.id,
@@ -112,35 +124,6 @@ function storiesWhere({
   );
 }
 
-async function hasMoreStories({
-  isNewest,
-  page,
-  type,
-  q,
-}: {
-  isNewest: boolean;
-  page: number;
-  type: string | null;
-  q: string | null;
-}) {
-  const count = await db
-    .select({
-      id: storiesTable.id,
-    })
-    .from(storiesTable)
-    .where(
-      storiesWhere({
-        isNewest,
-        type,
-        q,
-      })
-    )
-    .limit(PER_PAGE)
-    .offset(page * PER_PAGE);
-
-  return count.length > 0;
-}
-
 export async function Stories({
   page = 1,
   isNewest = false,
@@ -155,12 +138,15 @@ export async function Stories({
   const uid = headers().get("x-vercel-id") ?? nanoid();
   console.time(`fetch stories ${uid}`);
 
-  const stories = await getStories({
+  const { data, errors } = await execute({ query: GET_STORIES_QUERY, variables: {
     page,
     isNewest,
     type,
     q,
-  })
+    limit: PER_PAGE,
+  } })
+
+  const stories = data?.stories?.edges?.filter(Boolean).flatMap((edge) => edge?.node || []) || []
   
   console.timeEnd(`fetch stories ${uid}`);
 
@@ -241,37 +227,10 @@ export async function Stories({
       </ul>
 
       <div className="mt-4 ml-7">
-        <Suspense fallback={null}>
-          <More page={page} isNewest={isNewest} type={type} q={q} />
-        </Suspense>
+        {data?.stories?.pageInfo?.hasNextPage && <MoreLink q={q} page={page + 1} />}
       </div>
     </div>
   ) : (
     <div>No stories to show</div>
   );
-}
-
-async function More({
-  page,
-  isNewest,
-  type,
-  q,
-}: {
-  isNewest: boolean;
-  page: number;
-  type: string | null;
-  q: string | null;
-}) {
-  const hasMore = await hasMoreStories({
-    isNewest,
-    type,
-    page,
-    q,
-  });
-
-  if (hasMore) {
-    return <MoreLink q={q} page={page + 1} />;
-  } else {
-    return null;
-  }
 }
