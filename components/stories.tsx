@@ -76,52 +76,6 @@ export async function getStories({
   } })
 
   return result.data?.stories?.edges?.filter(Boolean).flatMap((edge) => edge?.node || []) || [];
-
-  return await db
-    .select({
-      id: storiesTable.id,
-      title: storiesTable.title,
-      url: storiesTable.url,
-      domain: storiesTable.domain,
-      username: storiesTable.username,
-      points: storiesTable.points,
-      submitted_by: usersTable.username,
-      comments_count: storiesTable.comments_count,
-      created_at: storiesTable.created_at,
-    })
-    .from(storiesTable)
-    .orderBy(desc(storiesTable.created_at))
-    .where(
-      storiesWhere({
-        isNewest,
-        type,
-        q,
-      })
-    )
-    .limit(limit)
-    .offset((page - 1) * limit)
-    .leftJoin(usersTable, sql`${usersTable.id} = ${storiesTable.submitted_by}`);
-}
-
-function storiesWhere({
-  isNewest,
-  type,
-  q,
-}: {
-  isNewest: boolean;
-  type: string | null;
-  q: string | null;
-}) {
-  return and(
-    isNewest
-      ? sql`${storiesTable.submitted_by} IS NOT NULL`
-      : and(
-          // search includes all stories, with submitters or not
-          q != null ? undefined : sql`${storiesTable.submitted_by} IS NULL`,
-          type != null ? sql`${storiesTable.type} = ${type}` : undefined
-        ),
-    q != null && q.length ? ilike(storiesTable.title, `%${q}%`) : undefined
-  );
 }
 
 export async function Stories({
